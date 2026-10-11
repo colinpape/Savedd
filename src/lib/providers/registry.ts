@@ -15,6 +15,7 @@ import { stakesProvider } from './stakes';
 import { searxngProvider } from './searxng';
 import { duckduckgoProvider } from './duckduckgo';
 import { curatedProvider } from './curated';
+import { braveProvider } from './brave';
 import { parallelProvider } from './parallel';
 import { torProvider } from './tor';
 import { wikipediaProvider } from './wikipedia';

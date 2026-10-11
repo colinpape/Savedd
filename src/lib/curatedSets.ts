@@ -1,10 +1,9 @@
 /**
- * Curated keyword results — a Savedd control-plane list that replaces
- * the open-web results for an exact keyword.
+ * Curated keyword results — a Savedd control-plane list shown above
+ * the other results for an exact keyword.
  *
- * Open keyword stakes (0xsearchstr:stake:*) stay what they are: anyone
- * can pin one link, and the rest of the page still shows. A curated set
- * is different. It is a full result list, and only the owner, an admin,
+ * Open keyword stakes stay what they are: anyone can pin one link.
+ * A curated set is an ordered list, and only the owner, an admin,
  * or a moderator can publish one. Readers ignore every other author.
  *
  *   kind: 30078

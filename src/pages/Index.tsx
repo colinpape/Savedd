@@ -41,12 +41,6 @@ const KNOWN_TAB_IDS = new Set(ALL_SOURCE_TABS.filter((t) => !isExternalTab(t.id)
  *  slower providers resolve in the background. */
 const PAGE_SIZE = 10;
 
-/** Open-web providers a curated keyword replaces until the reader asks for them. */
-const REPLACED_BY_CURATION = new Set([
-  'brave', 'duckduckgo', 'searxng', 'parallel',
-  'web-index', 'cached-index', 'community', 'keyword-stake',
-]);
-
 const Index = () => {
   const { config } = useAppContext();
   const { canModerate } = useAdminAccess();
@@ -64,7 +58,6 @@ const Index = () => {
   const [source, setSource] = useState<SourceTabValue>(initialSource);
   const [stakeOpen, setStakeOpen] = useState(false);
   const [curateOpen, setCurateOpen] = useState(false);
-  const [showOpenWeb, setShowOpenWeb] = useState(false);
   // Lets the hero keep the typed query and show a button spinner while the
   // heavier results view renders, instead of blanking the field first.
   const [isSearchPending, startSearchTransition] = useTransition();
@@ -129,34 +122,20 @@ const Index = () => {
     return results.filter((r) => r.source === source);
   }, [results, source]);
 
-  // Keyword stakes get their own top-of-page placement (Presearch-style).
-  // A trusted curated set replaces the open-web providers on Web / All / Index.
+  // Keyword stakes and curated links sit above the open-web results.
   const curatedResults = useMemo(
     () => filteredResults.filter((r) => r.provider === 'curated'),
     [filteredResults],
   );
-  const hideOpenWeb = curatedResults.length > 0
-    && !showOpenWeb
-    && (source === 'web' || source === 'all' || source === 'index');
   const stakeResults = useMemo(
-    () => (hideOpenWeb ? [] : filteredResults.filter((r) => r.provider === 'keyword-stake')),
-    [filteredResults, hideOpenWeb],
+    () => filteredResults.filter((r) => r.provider === 'keyword-stake'),
+    [filteredResults],
   );
   const organicResults = useMemo(
-    () => filteredResults.filter((r) => {
-      if (r.provider === 'curated' || r.provider === 'keyword-stake') return false;
-      if (hideOpenWeb && REPLACED_BY_CURATION.has(r.provider)) return false;
-      return true;
-    }),
-    [filteredResults, hideOpenWeb],
+    () => filteredResults.filter((r) => r.provider !== 'curated' && r.provider !== 'keyword-stake'),
+    [filteredResults],
   );
-  const curatedApplies = curatedResults.length > 0
-    && (source === 'web' || source === 'all' || source === 'index');
-  const listedResults = useMemo(() => {
-    if (!curatedApplies) return organicResults;
-    if (hideOpenWeb && source !== 'all') return curatedResults;
-    return [...curatedResults, ...organicResults];
-  }, [curatedApplies, hideOpenWeb, source, curatedResults, organicResults]);
+  const listedResults = organicResults;
 
   const totalResults = listedResults.length;
 
@@ -169,7 +148,6 @@ const Index = () => {
   if (pageKey !== trackedPageKey) {
     setTrackedPageKey(pageKey);
     setPage(1);
-    setShowOpenWeb(false);
   }
 
   const pageCount = Math.max(1, Math.ceil(totalResults / PAGE_SIZE));
@@ -192,7 +170,7 @@ const Index = () => {
 
   // AI Answer layer — synthesizes from the search evidence (opt-in,
   // Settings → AI). Runs only for text-class queries with enough evidence.
-  const ai = useAIAnswer(activeQuery, hideOpenWeb ? listedResults : organicResults, hasSearched && source !== 'i2p');
+  const ai = useAIAnswer(activeQuery, [...curatedResults, ...organicResults], hasSearched && source !== 'i2p');
 
   useSeoMeta({
     title: hasSearched
@@ -359,6 +337,16 @@ const Index = () => {
             />
           )}
 
+          {/* Curated links first, then community stakes, then the open web. */}
+          {source !== 'i2p' && curatedResults.length > 0 && (
+            <div className="space-y-3 mb-4">
+              <p className="text-sm text-muted-foreground">Curated</p>
+              {curatedResults.map((result) => (
+                <UnifiedResultCard key={result.id} result={result} />
+              ))}
+            </div>
+          )}
+
           {/* Community keyword stakes — Presearch-style top placement */}
           {source !== 'i2p' && stakeResults.length > 0 && (
             <div className="space-y-3 mb-4">
@@ -370,7 +358,7 @@ const Index = () => {
 
           {/* Vote tallies load once per visible result set (batched) and
               flow to every card's vote buttons via context. */}
-          <VoteTalliesProvider results={[...stakeResults, ...organicResults]}>
+          <VoteTalliesProvider results={[...curatedResults, ...stakeResults, ...organicResults]}>
 
           {/* Loading state */}
           {source !== 'i2p' && isLoading && totalResults === 0 ? (
@@ -419,20 +407,6 @@ const Index = () => {
             </>
           ) : source !== 'i2p' && (
             <div className="space-y-3">
-              {curatedApplies && (
-                <div className="flex items-center justify-between gap-3">
-                  <p className="text-sm text-muted-foreground">
-                    Curated results for &ldquo;{activeQuery}&rdquo;.
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => setShowOpenWeb((open) => !open)}
-                    className="text-xs text-primary shrink-0"
-                  >
-                    {showOpenWeb ? 'Hide the open web' : 'Show the open web'}
-                  </button>
-                </div>
-              )}
               {/* Result count header + stake CTA */}
               {totalResults > 0 && (
                 <div ref={resultsTopRef} className="flex items-center justify-between gap-3 mb-1 scroll-mt-24">
@@ -515,7 +489,7 @@ const Index = () => {
               )}
 
               {/* Browser fallback when sparse (or stakes-only) */}
-              {((totalResults > 0 && totalResults < 5) || (totalResults === 0 && stakeResults.length > 0 && !isLoading)) && source !== 'tor' && !hideOpenWeb && (
+              {((totalResults > 0 && totalResults < 5) || (totalResults === 0 && stakeResults.length > 0 && !isLoading)) && source !== 'tor' && (
                 <BrowserFallback query={activeQuery} className="mt-4" />
               )}
             </div>

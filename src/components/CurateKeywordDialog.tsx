@@ -3,7 +3,7 @@
  *
  * Signed with the logged-in key. Readers only trust the owner, admins,
  * and moderators, so a normal account can submit the event and it still
- * will not replace the open web.
+ * will not be shown.
  */
 import { useEffect, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -92,8 +92,8 @@ export function CurateKeywordDialog({ open, onOpenChange, initialKeyword = '' }:
         toast({
           title: cleared ? 'Curated results removed' : 'Curated results published',
           description: cleared
-            ? `"${keyword.trim()}" shows the open web again.`
-            : `"${keyword.trim()}" now shows this list instead of the open web.`,
+            ? `"${keyword.trim()}" no longer has curated links.`
+            : `"${keyword.trim()}" will show these links above the other results.`,
         });
         void queryClient.invalidateQueries({ queryKey: ['provider-search'] });
         void queryClient.invalidateQueries({ queryKey: ['curated-set'] });
@@ -126,8 +126,8 @@ export function CurateKeywordDialog({ open, onOpenChange, initialKeyword = '' }:
             Curate this search
           </DialogTitle>
           <DialogDescription>
-            These links replace Brave and the index when someone searches this
-            keyword. The event is signed with your Nostr key. Only the owner,
+            These links appear above the other results when someone searches
+            this keyword. The event is signed with your Nostr key. Only the owner,
             an admin, or a moderator is trusted.
           </DialogDescription>
         </DialogHeader>

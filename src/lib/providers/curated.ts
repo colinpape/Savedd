@@ -2,8 +2,8 @@
  * Curated results provider.
  *
  * When a search exactly matches a keyword on a trusted curated set,
- * those links are the Web results. The page hides Brave, DuckDuckGo,
- * SearXNG, and the general index until the reader asks for the open web.
+ * those links are shown above the open-web results. Brave, DuckDuckGo,
+ * SearXNG, and the general index still run.
  *
  * Trusted authors are the owner plus the owner-signed admin and
  * moderator lists. Anyone else's event is ignored.

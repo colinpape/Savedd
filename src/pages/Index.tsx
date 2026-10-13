@@ -11,6 +11,7 @@ import { UnifiedResultCard } from '@/components/UnifiedResultCard';
 import { StakeResultCard } from '@/components/StakeResultCard';
 import { VoteTalliesProvider } from '@/components/VoteButtons';
 import { AIAnswerCard } from '@/components/AIAnswerCard';
+import { AIFollowUp } from '@/components/AIFollowUp';
 import { StakeKeywordDialog } from '@/components/StakeKeywordDialog';
 import { ProviderStatus } from '@/components/ProviderStatus';
 import { BrowserFallback } from '@/components/BrowserFallback';
@@ -324,6 +325,15 @@ const Index = () => {
               evidence={ai.evidence}
               isLoading={ai.isLoading}
               error={ai.error}
+              className="mb-4"
+            />
+          )}
+          {source !== 'i2p' && ai.answer && (
+            <AIFollowUp
+              key={activeQuery}
+              query={activeQuery}
+              answer={ai.answer}
+              evidence={ai.evidence}
               className="mb-4"
             />
           )}

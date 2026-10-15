@@ -26,11 +26,22 @@ export interface AIEvidenceItem {
   snippet: string;
 }
 
+export interface AIChatMessage {
+  role: 'system' | 'user' | 'assistant';
+  content: string;
+}
+
 export interface AIAnswerRequest {
   query: string;
   evidence: AIEvidenceItem[];
   model: string;
   signal?: AbortSignal;
+  /**
+   * Full conversation, when this is a follow-up rather than the first answer.
+   * The engine proxy still replaces any system message with its own prompt,
+   * so follow-up rules belong in the user message.
+   */
+  messages?: AIChatMessage[];
 }
 
 export interface AIAnswer {

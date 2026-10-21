@@ -76,7 +76,7 @@ export function createOpenAICompatibleProvider(partial: {
         }
       }
 
-      const messages = [
+      const messages = req.messages ?? [
         { role: 'system', content: ANSWER_SYSTEM_PROMPT },
         { role: 'user', content: buildEvidencePrompt(req.query, req.evidence) },
       ];

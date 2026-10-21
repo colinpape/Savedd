@@ -1,7 +1,7 @@
 import { useState, useCallback, useMemo, useEffect, useRef, useTransition } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useSeoMeta } from '@unhead/react';
-import { Search, Network, ExternalLink, Gem, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, Network, ExternalLink, Gem, ChevronLeft, ChevronRight, ListChecks } from 'lucide-react';
 
 import { Layout } from '@/components/Layout';
 import { LogoMark } from '@/components/LogoMark';
@@ -11,7 +11,9 @@ import { UnifiedResultCard } from '@/components/UnifiedResultCard';
 import { StakeResultCard } from '@/components/StakeResultCard';
 import { VoteTalliesProvider } from '@/components/VoteButtons';
 import { AIAnswerCard } from '@/components/AIAnswerCard';
+import { AIFollowUp } from '@/components/AIFollowUp';
 import { StakeKeywordDialog } from '@/components/StakeKeywordDialog';
+import { CurateKeywordDialog } from '@/components/CurateKeywordDialog';
 import { ProviderStatus } from '@/components/ProviderStatus';
 import { BrowserFallback } from '@/components/BrowserFallback';
 import { SearchSkeleton } from '@/components/SearchSkeleton';
@@ -27,6 +29,7 @@ import { useInstantAnswer } from '@/hooks/useInstantAnswer';
 import { useAIAnswer } from '@/hooks/useAIAnswer';
 import { useSearchHotkeys } from '@/hooks/useSearchHotkeys';
 import { useAppContext } from '@/hooks/useAppContext';
+import { useAdminAccess } from '@/hooks/useAdminAccess';
 import type { SearchSource } from '@/lib/providers/types';
 
 // Tabs that can actually be the ACTIVE source — external shortcut tabs
@@ -41,6 +44,7 @@ const PAGE_SIZE = 10;
 
 const Index = () => {
   const { config } = useAppContext();
+  const { canModerate } = useAdminAccess();
   const [searchParams, setSearchParams] = useSearchParams();
   const initialQuery = searchParams.get('q') || '';
   // URL param wins; otherwise the user's configured default tab (Web out of
@@ -54,6 +58,7 @@ const Index = () => {
   const [activeQuery, setActiveQuery] = useState(initialQuery);
   const [source, setSource] = useState<SourceTabValue>(initialSource);
   const [stakeOpen, setStakeOpen] = useState(false);
+  const [curateOpen, setCurateOpen] = useState(false);
   // Lets the hero keep the typed query and show a button spinner while the
   // heavier results view renders, instead of blanking the field first.
   const [isSearchPending, startSearchTransition] = useTransition();
@@ -108,7 +113,7 @@ const Index = () => {
     if (source === 'i2p') return [];
     // The Index tab = community index only (SIP-01 observations + legacy cache).
     if (source === 'index') {
-      return results.filter((r) => r.provider === 'web-index' || r.provider === 'cached-index');
+      return results.filter((r) => r.provider === 'web-index' || r.provider === 'cached-index' || r.provider === 'curated');
     }
     // The Code tab also shows NIP-C0 snippets (they arrive as Nostr results
     // with kind 'Code') alongside Stack Overflow.
@@ -118,17 +123,22 @@ const Index = () => {
     return results.filter((r) => r.source === source);
   }, [results, source]);
 
-  // Keyword stakes get their own top-of-page placement (Presearch-style).
+  // Keyword stakes and curated links sit above the open-web results.
+  const curatedResults = useMemo(
+    () => filteredResults.filter((r) => r.provider === 'curated'),
+    [filteredResults],
+  );
   const stakeResults = useMemo(
     () => filteredResults.filter((r) => r.provider === 'keyword-stake'),
     [filteredResults],
   );
   const organicResults = useMemo(
-    () => filteredResults.filter((r) => r.provider !== 'keyword-stake'),
+    () => filteredResults.filter((r) => r.provider !== 'curated' && r.provider !== 'keyword-stake'),
     [filteredResults],
   );
+  const listedResults = organicResults;
 
-  const totalResults = organicResults.length;
+  const totalResults = listedResults.length;
 
   // Pagination — back to page 1 on a new query or tab. Adjusted during
   // render so a results update doesn't wait on an effect.
@@ -144,8 +154,8 @@ const Index = () => {
   const pageCount = Math.max(1, Math.ceil(totalResults / PAGE_SIZE));
   const currentPage = Math.min(page, pageCount);
   const pagedResults = useMemo(
-    () => organicResults.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE),
-    [organicResults, currentPage],
+    () => listedResults.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE),
+    [listedResults, currentPage],
   );
 
   const goToPage = useCallback((p: number) => {
@@ -161,7 +171,7 @@ const Index = () => {
 
   // AI Answer layer — synthesizes from the search evidence (opt-in,
   // Settings → AI). Runs only for text-class queries with enough evidence.
-  const ai = useAIAnswer(activeQuery, organicResults, hasSearched && source !== 'i2p');
+  const ai = useAIAnswer(activeQuery, [...curatedResults, ...organicResults], hasSearched && source !== 'i2p');
 
   useSeoMeta({
     title: hasSearched
@@ -327,6 +337,25 @@ const Index = () => {
               className="mb-4"
             />
           )}
+          {source !== 'i2p' && ai.answer && (
+            <AIFollowUp
+              key={activeQuery}
+              query={activeQuery}
+              answer={ai.answer}
+              evidence={ai.evidence}
+              className="mb-4"
+            />
+          )}
+
+          {/* Curated links first, then community stakes, then the open web. */}
+          {source !== 'i2p' && curatedResults.length > 0 && (
+            <div className="space-y-3 mb-4">
+              <p className="text-sm text-muted-foreground">Curated</p>
+              {curatedResults.map((result) => (
+                <UnifiedResultCard key={result.id} result={result} />
+              ))}
+            </div>
+          )}
 
           {/* Community keyword stakes — Presearch-style top placement */}
           {source !== 'i2p' && stakeResults.length > 0 && (
@@ -339,7 +368,7 @@ const Index = () => {
 
           {/* Vote tallies load once per visible result set (batched) and
               flow to every card's vote buttons via context. */}
-          <VoteTalliesProvider results={[...stakeResults, ...organicResults]}>
+          <VoteTalliesProvider results={[...curatedResults, ...stakeResults, ...organicResults]}>
 
           {/* Loading state */}
           {source !== 'i2p' && isLoading && totalResults === 0 ? (
@@ -371,6 +400,16 @@ const Index = () => {
                         Be the first to stake this keyword
                       </button>
                     )}
+                    {canModerate && (
+                      <button
+                        type="button"
+                        onClick={() => setCurateOpen(true)}
+                        className="inline-flex items-center gap-1.5 mt-5 text-xs text-primary/80 hover:text-primary transition-colors"
+                      >
+                        <ListChecks className="w-3 h-3" />
+                        Curate this search
+                      </button>
+                    )}
                   </CardContent>
                 </Card>
               )}
@@ -398,6 +437,16 @@ const Index = () => {
                     >
                       <Gem className="w-3 h-3" />
                       Stake this keyword
+                    </button>
+                  )}
+                  {canModerate && (
+                    <button
+                      type="button"
+                      onClick={() => setCurateOpen(true)}
+                      className="inline-flex items-center gap-1.5 text-xs text-muted-foreground/70 hover:text-primary transition-colors shrink-0"
+                    >
+                      <ListChecks className="w-3 h-3" />
+                      Curate this search
                     </button>
                   )}
                 </div>
@@ -466,6 +515,11 @@ const Index = () => {
           initialKeyword={activeQuery}
         />
       )}
+      <CurateKeywordDialog
+        open={curateOpen}
+        onOpenChange={setCurateOpen}
+        initialKeyword={activeQuery}
+      />
     </Layout>
   );
 };

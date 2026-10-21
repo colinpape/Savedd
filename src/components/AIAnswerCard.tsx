@@ -55,12 +55,17 @@ function renderWithCitations(text: string, evidence: AIEvidenceItem[], affiliate
   });
 }
 
-export function AIAnswerCard({ answer, evidence, isLoading, error, className }: AIAnswerCardProps) {
+export function CitedText({ text, evidence, className }: { text: string; evidence: AIEvidenceItem[]; className?: string }) {
   const { rules: affiliateRules } = useAffiliateRules();
   const body = useMemo(
-    () => (answer ? renderWithCitations(answer.text, evidence, affiliateRules) : null),
-    [answer, evidence, affiliateRules],
+    () => renderWithCitations(text, evidence, affiliateRules),
+    [text, evidence, affiliateRules],
   );
+  return <div className={className}>{body}</div>;
+}
+
+export function AIAnswerCard({ answer, evidence, isLoading, error, className }: AIAnswerCardProps) {
+  const { rules: affiliateRules } = useAffiliateRules();
 
   if (isLoading) {
     return (
@@ -116,9 +121,11 @@ export function AIAnswerCard({ answer, evidence, isLoading, error, className }: 
       </div>
 
       {/* Answer body with citation links */}
-      <div className="text-sm text-foreground/90 leading-relaxed whitespace-pre-wrap break-words">
-        {body}
-      </div>
+      <CitedText
+        text={answer.text}
+        evidence={evidence}
+        className="text-sm text-foreground/90 leading-relaxed whitespace-pre-wrap break-words"
+      />
 
       {/* Sources actually cited */}
       {usedEvidence.length > 0 && (

@@ -24,6 +24,9 @@ import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useMyReferralStats, useReferralConfig } from '@/hooks/useReferrals';
+import { usePartnerApplicationActions, usePartnerApplications, usePartnerDirectory, usePartnerSignupCount } from '@/hooks/usePartners';
+import { PartnerAffiliateEditor } from '@/components/PartnerAffiliateEditor';
+import { isValidPartnerSlug, normalizePartnerSlug } from '@/lib/partners';
 import { useToast } from '@/hooks/useToast';
 import { ENGINE_PROFILE } from '@/lib/engine/profile';
 
@@ -39,8 +42,21 @@ const Partners = () => {
   const { user } = useCurrentUser();
   const { stats, isLoading } = useMyReferralStats();
   const { config: referralConfig, isLoading: configLoading } = useReferralConfig();
+  const { partners } = usePartnerDirectory();
+  const { applications } = usePartnerApplications();
+  const { apply } = usePartnerApplicationActions();
   const { toast } = useToast();
   const [copied, setCopied] = useState(false);
+  const [copiedVanity, setCopiedVanity] = useState(false);
+  const [slug, setSlug] = useState('');
+  const [name, setName] = useState('');
+  const [note, setNote] = useState('');
+  const [applying, setApplying] = useState(false);
+
+  const mine = user ? partners.find((p) => p.pubkey === user.pubkey) : undefined;
+  const myApplication = user ? applications.find((a) => a.pubkey === user.pubkey) : undefined;
+  const { count: signups, isLoading: signupsLoading } = usePartnerSignupCount(mine ? user!.pubkey : null);
+  const vanity = mine ? `${ENGINE_PROFILE.branding.siteUrl.replace(/\/$/, '')}/${mine.slug}` : '';
 
   useSeoMeta({
     title: `Partners - ${ENGINE_PROFILE.branding.name}`,
@@ -127,6 +143,92 @@ const Partners = () => {
                 </p>
               </CardContent>
             </Card>
+
+            {mine && (
+              <Card className="border-primary/20">
+                <CardContent className="py-4 space-y-2">
+                  <p className="text-xs font-medium">Your partner link</p>
+                  <div className="flex gap-2">
+                    <Input readOnly value={vanity} className="font-mono text-xs" onFocus={(e) => e.target.select()} aria-label="Your partner link" />
+                    <Button
+                      variant="outline"
+                      className="shrink-0"
+                      onClick={() => {
+                        void navigator.clipboard.writeText(vanity).then(() => {
+                          setCopiedVanity(true);
+                          setTimeout(() => setCopiedVanity(false), 2000);
+                        }).catch(() => toast({ title: 'Copy failed', variant: 'destructive' }));
+                      }}
+                    >
+                      {copiedVanity ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                    </Button>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground/70 leading-relaxed">
+                    People who open this land on search and stay attributed to you. If you have
+                    an affiliate link for a site, they get yours. Otherwise they get Savedd's.
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+
+            {!mine && (
+              <Card>
+                <CardContent className="py-4 space-y-3">
+                  <p className="text-sm font-medium">{myApplication ? 'Application sent' : 'Apply for a partner link'}</p>
+                  {myApplication ? (
+                    <p className="text-xs text-muted-foreground">
+                      You asked for <span className="font-mono">/{myApplication.slug}</span>. An admin
+                      approves it from the referrals console. Your invite link above works in the meantime.
+                    </p>
+                  ) : (
+                    <>
+                      <p className="text-xs text-muted-foreground leading-relaxed">
+                        A partner link looks like savedd.com/your-name. After approval you can
+                        attach your own affiliate links, and you get a count of people who later log in.
+                      </p>
+                      <Input placeholder="Display name" value={name} onChange={(e) => setName(e.target.value)} aria-label="Display name" />
+                      <Input placeholder="Link name (glennbeck)" value={slug} onChange={(e) => setSlug(e.target.value)} className="font-mono text-sm" aria-label="Requested link name" />
+                      <Input placeholder="Short note (optional)" value={note} onChange={(e) => setNote(e.target.value)} aria-label="Application note" />
+                      <Button
+                        disabled={applying || !name.trim() || !isValidPartnerSlug(normalizePartnerSlug(slug))}
+                        onClick={() => {
+                          setApplying(true);
+                          void apply({ slug, name, note })
+                            .then(() => toast({ title: 'Application sent' }))
+                            .catch((err: unknown) => toast({
+                              title: 'Could not apply',
+                              description: err instanceof Error ? err.message : 'Try again',
+                              variant: 'destructive',
+                            }))
+                            .finally(() => setApplying(false));
+                        }}
+                      >
+                        Apply
+                      </Button>
+                    </>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+
+            {mine && user && (
+              <>
+                <Card>
+                  <CardContent className="py-4 px-5 flex items-center gap-3">
+                    <Users className="w-4 h-4 text-primary shrink-0" />
+                    <div>
+                      <p className="text-xl font-bold tracking-tight">{signupsLoading ? '…' : (signups ?? '—')}</p>
+                      <p className="text-[11px] text-muted-foreground">Logins from your link</p>
+                    </div>
+                  </CardContent>
+                </Card>
+                <p className="text-[11px] text-muted-foreground/70 leading-relaxed -mt-3">
+                  This count is encrypted to you and to Savedd. The page shows the number only, not who they are.
+                  {signups === null && ' Your signer needs NIP-44 decryption to open it.'}
+                </p>
+                <PartnerAffiliateEditor pubkey={user.pubkey} />
+              </>
+            )}
 
             {/* Headline stats */}
             <div className="grid grid-cols-2 gap-3">

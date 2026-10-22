@@ -23,7 +23,7 @@ import { VoteButtons } from '@/components/VoteButtons';
 import { sanitizeUrl, sanitizeResultUrl } from '@/lib/sanitizeUrl';
 import { useWebBookmarks, bookmarkDForUrl } from '@/hooks/useWebBookmarks';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
-import { useAffiliateRules } from '@/hooks/useAffiliates';
+import { useEffectiveAffiliateRules } from '@/hooks/usePartners';
 import { applyAffiliateRules } from '@/lib/affiliates';
 import { trackAffiliateClick } from '@/hooks/useReferrals';
 import { ENGINE_PROFILE } from '@/lib/engine/profile';
@@ -301,7 +301,7 @@ function ExternalResultCard({ result, className }: { result: SearchResult; class
   const bookmarked = bookmarkD !== null && bookmarks.isBookmarked(result.url);
   // Owner-managed affiliate tagging (e.g. amazon.ca → ?tag=code). Applied
   // before sanitization so the final href is always a clean https URL.
-  const { rules: affiliateRules } = useAffiliateRules();
+  const { rules: affiliateRules } = useEffectiveAffiliateRules();
 
   // Nostr-native providers (wiki/git pools) link to internal /nip19 routes —
   // those navigate client-side via the router. Everything else opens in a

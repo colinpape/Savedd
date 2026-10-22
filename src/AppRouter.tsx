@@ -24,7 +24,7 @@ import DashboardPage from "./pages/Dashboard";
 import DocsPage from "./pages/Docs";
 import Goodbye from "./pages/Goodbye";
 import GoodbyeShare from "./pages/GoodbyeShare";
-import { NIP19Page } from "./pages/NIP19Page";
+import { SlugOrNip19 } from "./pages/SlugOrNip19";
 import NotFound from "./pages/NotFound";
 
 /** /goodbye/:id → /heaven/:id (keeps pre-rename share links working). */
@@ -71,7 +71,7 @@ export function AppRouter() {
         {/* NIP-46 mobile signer callback — nostrconnect:// URIs point here */}
         <Route path="/remoteloginsuccess" element={<RemoteLoginSuccess />} />
         {/* NIP-19 route for npub1, note1, naddr1, nevent1, nprofile1 */}
-        <Route path="/:nip19" element={<NIP19Page />} />
+        <Route path="/:nip19" element={<SlugOrNip19 />} />
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
         <Route path="*" element={<NotFound />} />
       </Routes>

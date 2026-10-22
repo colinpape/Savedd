@@ -144,10 +144,14 @@ export function normalizeHostInput(input: string): string {
  * whose pubkey is the owner or an owner-listed admin (`trustedAuthors`);
  * the membership check here is defense-in-depth.
  */
-export function parseAffiliateRules(event: NostrEvent, trustedAuthors: Set<string>): AffiliateRule[] {
+export function parseAffiliateRules(
+  event: NostrEvent,
+  trustedAuthors: Set<string>,
+  dTag: string = AFFILIATES_D_TAG,
+): AffiliateRule[] {
   if (event.kind !== AFFILIATES_KIND) return [];
   if (!trustedAuthors.has(event.pubkey)) return [];
-  if (event.tags.find(([n]) => n === 'd')?.[1] !== AFFILIATES_D_TAG) return [];
+  if (event.tags.find(([n]) => n === 'd')?.[1] !== dTag) return [];
 
   try {
     const parsed = JSON.parse(event.content) as unknown;
@@ -192,7 +196,11 @@ export function parseAffiliateRules(event: NostrEvent, trustedAuthors: Set<strin
 /** Build the owner-signed config event template (NIP-31 alt tag included).
  *  Single-param rules also carry legacy `param`/`value` fields so clients
  *  built before the params map keep tagging. */
-export function buildAffiliateRulesEvent(rules: AffiliateRule[]): {
+export function buildAffiliateRulesEvent(
+  rules: AffiliateRule[],
+  dTag: string = AFFILIATES_D_TAG,
+  alt = 'SAVEDD affiliate link rules (owner-managed domain → code map)',
+): {
   kind: number;
   content: string;
   tags: string[][];
@@ -208,9 +216,9 @@ export function buildAffiliateRulesEvent(rules: AffiliateRule[]): {
     kind: AFFILIATES_KIND,
     content: JSON.stringify({ version: 1, rules: serialized }),
     tags: [
-      ['d', AFFILIATES_D_TAG],
-      ['t', AFFILIATES_T_TAG],
-      ['alt', 'SAVEDD affiliate link rules (owner-managed domain → code map)'],
+      ['d', dTag],
+      ['t', dTag === AFFILIATES_D_TAG ? AFFILIATES_T_TAG : 'savedd-partner-affiliates'],
+      ['alt', alt],
     ],
   };
 }

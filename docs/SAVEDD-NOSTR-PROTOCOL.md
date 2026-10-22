@@ -49,6 +49,10 @@ keep their names so the federation keeps working.
 | Moderator roles | 30078 | `savedd:mod-roles` | **Owner only** |
 | Affiliate rules | 30078 | `savedd:affiliate-rules` | Owner + admins |
 | Invite Friends config | 30078 | `savedd:referral-config` | Owner + admins |
+| Partner directory | 30078 | `savedd:partners` | Owner + admins |
+| Partner application | 30078 | `savedd:partner-application` | The applicant |
+| Partner affiliate rules | 30078 | `savedd:partner-affiliates` | That approved partner |
+| Referral enrollment | 1059 gift wrap | rumor `d = savedd:referred-by` | Encrypted to the partner and the owner |
 | Moderation labels | 1985 (NIP-32) | `savedd.moderation` | Owner + admins + moderators |
 | Curated keywords | 30078 | `savedd:curated:<keyword>` | Owner + admins + moderators |
 | Abuse reports | 1984 (NIP-56) | `savedd.abuse` | Anyone files → team reads |
@@ -115,6 +119,24 @@ logged-in user** — using a link is not an administrative permission.
   never attributes.
 - **Authority separation** — `?ref=` is attribution only. It grants no
   permissions of any kind.
+
+## Partner program
+
+Approved partners are an owner/admin-signed directory (`savedd:partners`).
+A public slug (`savedd.com/glennbeck`) stores the same first-touch referrer
+as `?ref=`. Their affiliate rules (`savedd:partner-affiliates`, signed by
+the partner) are applied only for those visitors, and only in front of the
+central rules: a host the partner did not list keeps Savedd's link.
+
+When that visitor later logs in, the client publishes a NIP-17 gift wrap
+(kind 1059) to the partner and to the owner. The rumor says which account
+arrived through which partner. The outer event is signed by a one-time key,
+so relays cannot see either pubkey except the recipient on the `p` tag.
+There is no plaintext enrollment. The partner page shows a count, not names.
+
+Applications (`savedd:partner-application`) are public on purpose. Removing
+a partner from the directory stops their slug and their rules immediately;
+old gift wraps stay decryptable.
 
 ## Public vs private data
 

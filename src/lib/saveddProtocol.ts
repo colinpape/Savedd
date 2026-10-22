@@ -61,6 +61,12 @@ export const SAVEDD_PROTOCOL = {
   affiliateRules: 'savedd:affiliate-rules',
   /** kind 30078, d-tag: owner/admin-signed Invite Friends config. */
   referralConfig: 'savedd:referral-config',
+  /** kind 30078, d-tag: owner/admin-signed approved partner directory. */
+  partnerDirectory: 'savedd:partners',
+  /** kind 30078, d-tag: a partner application, one per applicant. */
+  partnerApplication: 'savedd:partner-application',
+  /** kind 30078, d-tag: a partner's own affiliate rules, signed by that partner. */
+  partnerAffiliates: 'savedd:partner-affiliates',
   /** NIP-32 label namespace (kind 1985): hidden results. */
   moderation: 'savedd.moderation',
   /** NIP-32 self-label namespace on kind 1984 abuse reports. */

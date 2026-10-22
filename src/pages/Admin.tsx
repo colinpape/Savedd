@@ -62,6 +62,7 @@ import {
 import { useAdminAccess } from '@/hooks/useAdminAccess';
 import { useAffiliateRules, useAffiliateActions } from '@/hooks/useAffiliates';
 import { useReferralConfig, useReferralConfigActions } from '@/hooks/useReferrals';
+import { PartnerAdmin } from '@/components/PartnerAdmin';
 import { DEFAULT_REFERRAL_CONFIG, type ReferralConfig } from '@/lib/referrals';
 import { applyAffiliateRules, isValidAffiliateRule, normalizeHostInput, paramsFromUrl, type AffiliateRule } from '@/lib/affiliates';
 import {
@@ -1481,6 +1482,7 @@ function ReferralsTab() {
         Defaults when nothing is published: enabled, {DEFAULT_REFERRAL_CONFIG.attributionWindowDays}-day
         window. Owner and admins can edit; the latest signed version wins.
       </p>
+      <PartnerAdmin />
     </div>
   );
 }

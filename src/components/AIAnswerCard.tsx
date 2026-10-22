@@ -12,7 +12,7 @@ import { Sparkles, ExternalLink, AlertTriangle } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { AIEvidenceItem, AIAnswer } from '@/lib/ai/types';
 import { sanitizeUrl } from '@/lib/sanitizeUrl';
-import { useAffiliateRules } from '@/hooks/useAffiliates';
+import { useEffectiveAffiliateRules } from '@/hooks/usePartners';
 import { applyAffiliateRules, type AffiliateRule } from '@/lib/affiliates';
 import { trackAffiliateClick } from '@/hooks/useReferrals';
 import { cn } from '@/lib/utils';
@@ -56,7 +56,7 @@ function renderWithCitations(text: string, evidence: AIEvidenceItem[], affiliate
 }
 
 export function CitedText({ text, evidence, className }: { text: string; evidence: AIEvidenceItem[]; className?: string }) {
-  const { rules: affiliateRules } = useAffiliateRules();
+  const { rules: affiliateRules } = useEffectiveAffiliateRules();
   const body = useMemo(
     () => renderWithCitations(text, evidence, affiliateRules),
     [text, evidence, affiliateRules],
@@ -65,7 +65,7 @@ export function CitedText({ text, evidence, className }: { text: string; evidenc
 }
 
 export function AIAnswerCard({ answer, evidence, isLoading, error, className }: AIAnswerCardProps) {
-  const { rules: affiliateRules } = useAffiliateRules();
+  const { rules: affiliateRules } = useEffectiveAffiliateRules();
 
   if (isLoading) {
     return (

@@ -16,6 +16,7 @@ import { APP_RELAYS } from '@/lib/appRelays';
 import { getBrowserLanguage } from '@/lib/languageFilter';
 import { ENGINE_PROFILE } from '@/lib/engine/profile';
 import { ReferralCapture } from '@/components/ReferralCapture';
+import { ReferralEnrollment } from '@/components/ReferralEnrollment';
 import AppRouter from './AppRouter';
 
 const head = createHead({
@@ -76,6 +77,7 @@ export function App() {
               {/* Invite Friends capture (?ref=npub…) — inside providers so the
                   self-referral guard can see the logged-in user. */}
               <ReferralCapture />
+              <ReferralEnrollment />
               <TooltipProvider>
                 <Toaster />
                 <Suspense>
